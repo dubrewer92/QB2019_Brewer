@@ -48,9 +48,9 @@ In the R code chunk below, please provide the code to:
 3) set your working directory to your '3.RStudio' folder. 
 
 ```{r}
-
-
-
+rm(list=ls())
+getwd()
+setwd("C:/Users/dusti/GitHub/QB2019_Brewer/2.Worksheets/3.RStudio")
 ```
 
 ## 3) USING R AS A CALCULATOR
@@ -64,10 +64,10 @@ Feel free to reference the **1. Introduction to version control and computing to
 4) the log (base e) of your favorite number.
 
 ```{r}
-
-
-
-
+5^3
+pi * 2^2
+sin(pi/4) * sqrt(2)
+log(22)
 ```
 
 ## 4) WORKING WITH VECTORS
@@ -82,9 +82,9 @@ In the R-code chunk below, do the following:
 3) Add `x` and `w` and divide by 15.
 
 ```{r}
-
-
-
+X <- c(1, 3, 5, 3, 8)
+W <- X*14
+(X+W)/15
 ```
 
 Now, do the following: 
