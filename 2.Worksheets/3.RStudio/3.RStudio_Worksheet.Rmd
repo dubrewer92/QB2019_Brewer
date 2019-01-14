@@ -245,8 +245,13 @@ require("corrplot")
 fitreg <- lm(ZP ~ TN, data = meso)
 summary(fitreg)
 
-plot(meso$TN, meso$ZP, ylim = c(0, 10), xlim = c(500, 5000), xlab = expression (paste("Total Nitrogen (", mu, "g/L")), ylab = "Zooplankton Biomass (mg/L)", las = 1) + (text(meso$TN, meso$ZP, meso$NUTS, pos = 3, cex = 0.8))
-
+plot(meso$TN, meso$ZP, ylim = c(0, 10), xlim = c(500, 5000), xlab = expression (paste("Total Nitrogen (", mu, "g/L)")), ylab = "Zooplankton Biomass (mg/L)", las = 1)
+text(meso$TN, meso$ZP, meso$NUTS, pos = 3, cex = 0.8)
+newTN <- seq(min(meso$TN), max(meso$TN), 10)
+regline <- predict(fitreg, newdata = data.frame(TN = newTN))
+lines(newTN, regline)
+conf95 <- predict(fitreg, newdata = data.frame(TN = newTN), interval = c("confidence"), level = 0.95, type = "response")
+matlines(newTN, conf95[, c("lwr", "upr")], type= "l", lty = 2, lwd = 1, col = "black")
 
 
 ```
@@ -269,12 +274,24 @@ Using the R code chunk below, do the following:
 
 
 ```{r}
+NUTS <- factor(meso$NUTS, levels = c('L', 'M', 'H'))
 
+zp.means <- tapply(meso$ZP, NUTS, mean)
 
+zp.sem <- tapply(meso$ZP, NUTS, sem)
+zp.sem
 
+bp <- barplot(zp.means, ylim = c(0, round(max(meso$ZP), digits = 0)), pch = 15, cex = 1.25, las = 1, cex.lab = 1.4, cex.axis = 1.25, xlab = "nutrient supply", ylab = "zooplankton biomass (mg/L)", names.arg = c("low", "mediuim", "high")) 
+            
+arrows(x0 = bp, y0 = zp.means, y1 = zp.means - zp.sem, angle = 90, length = 0.1, lwd = 1)
 
+arrows(x0 = bp, y0 = zp.means, y1 = zp.means + zp.sem, angle = 90, length = 0.1, lwd = 1)
 
+fitanova <- aov(ZP ~ NUTS, data = meso)
 
+summary(fitanova)
+
+TukeyHSD(fitanova)
 
 ```
 
@@ -302,12 +319,19 @@ The remaining columns of data refer to the biomass (µg/L) of different zooplank
   
   + CHYD = *Chydorus* sp. 
 
-***Question 6***: With the visualization and statistical tools that we learned about in the **3. RStudio** handout, use the site-by-species matrix to assess whether and how different zooplankton taxa were responsible for the total biomass (ZP) response to nutrient enrichment. 
+***Question 6***: With the visualization and statistical tools that we learned about in the **3. RStudio*handout, use the site-by-species matrix to assess whether and how different zooplankton taxa were responsible for the total biomass (ZP) response to nutrient enrichment. Describe what you learned below in the "Answer" section and include appropriate code in the R chunk.
+
+> It appears that the different taxa were present in variable numbers. For example, SIMO and CHYD were nearly always the greatest contributers to total biomass while BOSM and NAUP contributed virtually nothing to total biomass. 
+
+ 
 Describe what you learned below in the "Answer" section and include appropriate code in the R chunk.
 
 ```{r}
-
-
+zoops <- read.table("data/zoops.txt", sep = "\t", header = TRUE)
+zoops
+str(zoops)
+zoops2 <- zoops[,3:11]
+zoops2
 
 
 ```
