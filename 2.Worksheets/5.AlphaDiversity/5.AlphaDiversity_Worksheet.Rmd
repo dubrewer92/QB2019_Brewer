@@ -38,7 +38,7 @@ In the R code chunk below, please provide the code to:
 ```{r}
 rm(list=ls())
 getwd()
-setwd("/Users/dubrewer/GitHub/QB2019_Brewer/2.Worksheets/5.AlphaDiversity")
+setwd("C:/Users/dusti/GitHub/QB2019_Brewer/2.Worksheets/5.AlphaDiversity")
 install.packages("vegan")
 require("vegan")
 ```
@@ -77,9 +77,11 @@ S.obs <- function(x = ""){
    rowSums(x > 0) * 1
 }
 
-BCI
+BCI <- BCI
 
-S.obs(BCI[1,])
+site1 <- (BCI[1,])
+
+S.obs(site1)
 
 specnumber(BCI[1,])
 
@@ -119,7 +121,7 @@ d.  Make some observations about coverage at the BCI plots.
 
 > ***Answer 2a***:  0 to 1
 
-> ***Answer 2b***:  My impression is that all of the observations would be singltons, and so coverage wouldn't be good. 
+> ***Answer 2b***:  My impression is that all of the observations would be singletons, and so coverage wouldn't be good. 
 
 > ***Answer 2c***:  Only about 7% were represented by singltons
 
@@ -141,12 +143,18 @@ In the R code chunk below, do the following:
 5. Calculate coverage of that site
 
 ```{r}
+soilbac <- read.table("data/soilbac.txt", sep = "\t", header = TRUE, row.names = 1)
+soilbac
 
+soilbac.t <- as.data.frame(t(soilbac))
 
+soilbac.t
 
+soilbac1 <- soilbac.t[1,]
 
+S.obs(soilbac1)
 
-
+C(soilbac1)
 ```
 
 ***Question 3***: Answer the following questions about the soil bacterial dataset. 
@@ -155,11 +163,11 @@ a.  How many sequences did we recover from the sample `soilbac1`, i.e. *N*?
 b.  What is the observed richness of `soilbac1`? 
 c.  How does coverage compare between the BCI sample (`site1`) and the KBS sample (`soilbac1`)?
 
-> ***Answer 3a***:  
+> ***Answer 3a***:  13,310
 
-> ***Answer 3b***: 
+> ***Answer 3b***: 1074
 
-> ***Answer 3c***:  
+> ***Answer 3c***:  Coverage was less for the KBS sample than the BCI sample. 
 
 
 ### Richness estimators
@@ -175,19 +183,52 @@ In the R code chunk below, do the following:
 4. Use these functions to estimate richness at `site1` and `soilbac1`. 
 
 ```{r}
+Chao1 <- function(x = ""){
+  S.obs(x) + (sum(x == 1)^2) / (2*sum(x ==2))
+}
 
+Chao2 <- function(site = "", SbyS = ""){
+  SbyS = as.data.frame(SbyS)
+  x = SbyS[site, ]
+  SbyS.pa <- (SbyS > 0) * 1
+  Q1 = sum(colSums(SbyS.pa) == 1)
+  Q2 = sum(colSums(SbyS.pa) == 2)
+  Chao2 = S.obs(x) + (Q1^2) / (2*Q2)
+  return(Chao2)
+}
 
+ACE <- function(x = "", thresh = 10){
+  x <- x[x>0]
+  S.abund <- length(which(x > thresh))
+  S.rare <- length(which(x <= thresh))
+  singlt <- length(which(x == 1))
+  N.rare <- sum(x[which(x <= thresh)])
+  C.ace <- 1 - (singlt / N.rare)
+  i <- c(1:thresh)
+  count <- function(i, y){
+    length(y[y == i])
+  }
+  a.1 <- sapply(i, count, x)
+  f.1 <- (i * (i - 1)) * a.1
+  G.ace <- (S.rare/C.ace)*(sum(f.1)/(N.rare*(N.rare-1)))
+  S.ace <- S.abund + (S.rare/C.ace) + (singlt/C.ace) * max(G.ace,0)
+  return(S.ace)
+}
 
+Chao1(site1)
+Chao1(soilbac1)
 
+ACE(site1)
+ACE(soilbac1)
 
-
-
+Chao2(1, BCI)
+Chao2(1, soilbac.t)
 
 ```
 
 ***Question 4***: What is the difference between ACE and the Chao estimators? Do the estimators give consistent results? Which one would you choose to use and why?
 
-> ***Answer 4***:
+> ***Answer 4***: Ace and Chao estimators differ in that the ACE estimator utilizes a threshold for rare species as less than 10, which more broadly defines a rare species (compared to singletons and doubletons of the chao estimators). All of the estimators produced similar estimates for the BCI dataset, though for the soilbac data set the Chao2 estimator produced a higher estimate for richness than the other estimators (>20,000 vs 5000), which could be because I made a mistake. I'm not sure what estimator I should use, but my impression is that it may depend on the situation and sample size (perhaps the threshold of 10 is inappropriate in some situations?). 
 
 
 
@@ -207,11 +248,17 @@ In the R code chunk below, please do the following:
 
 
 ```{r}
+soilbac.S <- S.obs(soilbac.t)
+soilbac.S
 
+min.N <- min(rowSums(soilbac.t))
+min.N
 
+S.rarefy <- rarefy(x = soilbac.t, sample = min.N, se = TRUE)
 
-
-
+rarecurve(x = soilbac.t, step = 20, col = "blue", cex = 0.6, las = 1)
+abline(0, 1, col = 'red')
+text(1500, 1500, "1:1", pos = 2, col = 'red')
 
 ```
 
