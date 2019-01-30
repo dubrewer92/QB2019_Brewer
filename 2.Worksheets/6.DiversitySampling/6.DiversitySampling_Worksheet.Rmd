@@ -1,8 +1,10 @@
 ---
 title: '6\. Worksheet: Diversity Sampling'
-author: "Student Name; Z620: Quantitative Biodiversity, Indiana University"
+author: 'Dustin Brewer; Z620: Quantitative Biodiversity, Indiana University'
 date: "`r format(Sys.time(), '%d %B, %Y')`"
-output: pdf_document
+output:
+  html_document:
+    df_print: paged
 geometry: margin=2.54cm
 ---
 
@@ -39,8 +41,50 @@ Make sure to annotate your code using # symbols so others (including instructors
 
 ```{r}
 
+rm(list=ls())
+setwd("C:/Users/dusti/GitHub/QB2019_Brewer/2.Worksheets/6.DiversitySampling")
+source <- read.table("JellyBeans.Source.txt")
+
+#Opened data from class
+vicariance <- read.table("JellyBeans.txt", header = TRUE)
+vicariance
 
 
+# Created two data frames, one for group A and one for group B
+
+A <- vicariance[c(1:3, 6, 8),]
+A
+GroupA <- (A[,c(3:30)])
+GroupA
+
+B <- vicariance[c(4,5,7,9),]
+B
+GroupB <- (B[,c(3:30)])
+GroupB
+
+#Wrote the observed richness function
+
+S.obs <- function(x = ""){
+  rowSums(x > 0) * 1
+}
+
+#Determined what the observed species richness for Group A and Group B was, for each of the samples.
+
+S.obsGroupA <- S.obs(GroupA)
+S.obsGroupA
+
+S.obsGroupB <- S.obs(GroupB)
+S.obsGroupB
+
+#Create a matrix with both Group A and Group B species richness for each sample
+Spec.Rich <- c(S.obsGroupA, S.obsGroupB)
+Spec.Rich
+
+#Plot the species richness estimates for samples from A and B
+
+cols <- c("blue", "blue", "blue", "blue", "blue")[Spec.Rich > 0]
+
+barplot(Spec.Rich, main = "# of species observed at samples from A and B", xlab = "Sample Name", ylab = "Observed Richness", col = cols)
 
 ```
 
@@ -48,6 +92,8 @@ Make sure to annotate your code using # symbols so others (including instructors
 
 Write an informative yet succicnt (~5 sentences) caption that creates a "stand-alone" figure. 
 Take a peek at figures and figure captions in a paper published in your favorite journal for inspiration.
+
+> "Figure 1. Separate samples of approximately the same size (1 cup full) were taken from two different populations of jelly monsters. Population A (blue bars) and Population B (white bars) were sampled 5 times and 4 times, respectively. Here, we demonstrate how different samples from the same population can indicate a wide range of observed species richness when a sample size of '1 cup full' is utilized. Observed richness of samples from population A had a range of 20 to 25, and observed species richness for samples from population B had a range of 19 to 24. With respect to observed species richness, and variability among samples, the two populations are similar."
 
 ## SUBMITTING YOUR ASSIGNMENT
 Use Knitr to create a PDF of your completed 6.DiversisitySampling_Worksheet.Rmd document, push it to GitHub, and create a pull request.
