@@ -1,6 +1,6 @@
 ---
 title: '8\. Worksheet: Among Site (Beta) Diversity -- Part 1'
-author: "Student Name; Z620: Quantitative Biodiversity, Indiana University"
+author: "Dustin Brewer; Z620: Quantitative Biodiversity, Indiana University"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 output: pdf_document
 geometry: margin=2.54cm
@@ -47,7 +47,16 @@ In the R code chunk below, provide the code to:
 4. load the `vegan` R package (be sure to install if needed).  
 
 ```{r}
+rm(list = ls())
+getwd()
 
+package.list <- c('vegan', 'ade4', 'viridis', 'gplots', 'BiodiversityR', 'indicspecies')
+  for (package in package.list) {
+    if (!require(package, character.only = TRUE, quietly = TRUE)) {
+      install.packages(package)
+      library(package, character.only=TRUE)
+    }
+  }
 
 
 
@@ -62,20 +71,22 @@ In the R code chunk below, do the following:
 
 ```{r}
 # note, pleae do not print the dataset when submitting
-
+data(doubs)
+str(doubs$env)
+?doubs
 
 
 ```
 
 ***Question 1***:  Describe some of the attributes of the `doubs` dataset.  
 
-a.  How many objects are in `doubs`?
+a.  How many objects are in `doubs`? 
 b.  How many fish species are there in the `doubs` dataset?
 c.  How many sites are in the `doubs` dataset?
 
-> ***Answer 1a***:  
-> ***Answer 1b***:  
-> ***Answer 1c***:  
+> ***Answer 1a***: It appears that there are 4 objects, 'species', 'xy', 'fish', and 'env'
+> ***Answer 1b***: 27 species 
+> ***Answer 1c***: 30 sites
 
 ### Visualizing the Doubs River Dataset
 
@@ -85,9 +96,9 @@ a.  How does fish richness vary along the sampled reach of the Doubs River?
 b.  How does Brown Trout (*Salmo trutta*) abundance vary along the sampled reach of the Doubs River?
 c.  What do these patterns say about the limitations of using richness when examining patterns of biodiversity?
 
-> ***Answer 2a***:  
-> ***Answer 2b***:  
-> ***Answer 2c***:  
+> ***Answer 2a***:  Richness tends to increase as one moves from site 1 (upstream) to site 30 (downstream). 
+> ***Answer 2b***:  Brown trout abundance varies distinctly, with none detected in sites 19-30 and between 1 and 5 found at most of sites 1-18.  
+> ***Answer 2c***:  Some limitations of using richness when examining patterns of diversity are that sites which have the same amount of species but do not have have similiar abundance of species are represented the same. Reporting diversity seems to be an important supplement to reporting richness. 
 
 ## 3) QUANTIFYING BETA-DIVERSITY
 
@@ -254,5 +265,22 @@ among subsamples in group B.
 Use a t-test to determine whether compositional similarity was affected by the "vicariance" event. 
 Finally, compare the compositional similarity of jelly beans in group A and group B to the source community?
 
+```{r}
+
+
+
+
+
+
+```
+
 2) Create a cluster diagram or ordination using the jelly bean data. 
 Are there any visual trends that would suggest a difference in composition between group A and group B?
+```{r}
+
+
+
+
+
+
+```
