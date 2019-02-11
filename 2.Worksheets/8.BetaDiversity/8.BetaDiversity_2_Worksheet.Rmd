@@ -143,15 +143,79 @@ In the R code chunk below, do the following:
 6. plot the constrained ordination results including labeled points for each site, and
 7. add vectors that demonstrate the influence of each environmental factor the constrained ordination.   
 ```{r}
+#Define an environmental matrix
+env.chm <- as.matrix(doubs$env[-8, 5:11])
 
+fish.db <- vegdist(fish, method = "bray")
 
+#Perform dbRDA, which seems to take a PCoA further
+doubs.dbrda <- dbrda(fish.db ~ ., as.data.frame(env.chm))
+ordiplot(doubs.dbrda)
 
+#check for pairwise correlations of environmental variables (should minimize use of correlated explanatory variables, to avoid overfitting)
+psych::corr.test(env.chm)
 
+#Model selection, using AIC. First, model only the intercept (which does not take into account explanatory vairables, and thus serves a compairson to a model with explanatory variables)
+doubs.dbrda.mod0 <- dbrda(fish.db ~ 1, as.data.frame(env.chm))
+  
+  #Have a look (note, no vectors)
+ordiplot(doubs.dbrda.mod0)
 
+  #Now, model the full model with all explanatory variables
+doubs.dbrda.mod1 <- dbrda(fish.db ~ ., as.data.frame(env.chm))
 
+  #Next, generate at all of the possible combinations of explanatory variables so that the best one can be chosen.
+doubs.dbrda <- ordiR2step(doubs.dbrda.mod0, doubs.dbrda.mod1, per.max = 200)
 
+# Now, look at the model that was selected
+doubs.dbrda$call
+doubs.dbrda$anova
+ordiplot(doubs.dbrda)
 
+#permutation test to evalulate significance
+permutest(doubs.dbrda, permutations = 999)
 
+#permutation test to evaluate environmental variables
+envfit(doubs.dbrda, env.chm[,c(4,6,7)], perm = 999)
+
+#Calculate explained variation
+dbrda.explainvar1 <- round(doubs.dbrda$CCA$eig[1] / sum(c(doubs.dbrda$CCA$eig, doubs.dbrda$CA$eig)), 3) * 100
+dbrda.expxlainvar2 <- round(doubs.dbrda$CCA$eig[2] / 
+                              sum(c(doubs.dbrda$CCA$eig, doubs.dbrda$CA$eig)), 3) * 100
+
+#Plot ordination
+  # define Plot Parameters
+par(mar = c(5, 5, 4, 4) + 0.1)
+
+  #Initiate plot
+plot(scores(doubs.dbrda, display = "wa"), xlim = c(-1.3, 1.1), ylim = c(-1.1, 2.7), 
+  xlab = paste("dbRDA 1 (", dbrda.explainvar1, "%)", sep = ""), 
+  ylab = paste("dbRDA 2 (", dbrda.expxlainvar2, "%)", sep = ""), 
+  pch = 16, cex = 2.0, type = "n", cex.lab = 1.5, cex.axis = 1.2, axes = FALSE)
+
+  #Add axes
+axis(side = 1, labels = T, lwd.ticks = 2, cex.axis = 1.2, las = 1)
+axis(side = 2, labels = T, lwd.ticks = 2, cex.axis = 1.2, las = 1)
+abline(h = 0, v = 0, lty = 3)
+box(lwd = 2)
+  
+  #Add points and labels
+points(scores(doubs.dbrda, display = "wa"),
+  pch = 19, cex = 3, bg = "gray", col = "gray")
+text(scores(doubs.dbrda, display = "wa"), 
+      labels = row.names(scores(doubs.dbrda, display = "wa")))
+
+  #Add environmental vectors
+vectors <- scores(doubs.dbrda, display = "bp")
+  
+arrows(0, 0, vectors [,1], vectors[,2],
+      lwd = 2, lty = 1, length = 0.2, col = "red")
+text(vectors[,1], vectors[,2], pos = 3, 
+    labels = row.names(vectors))
+axis(side = 3, lwd.ticks=2, cex.axis=1.2, las = 1, col = "red", lwd = 2.2,
+    at = pretty(range(vectors[, 1]))*2, labels = pretty(range(vectors[, 1])))
+axis(side = 4, lwd.ticks=2, cex.axis = 1.2, las = 1, col = "red", lwd = 2.2, 
+     at = pretty(range(vectors[, 2])) * 2, labels = pretty(range(vectors[, 2])))
 
 
 
@@ -166,7 +230,7 @@ In the R code chunk below, do the following:
 
 ***Question 3***: Based on the constrained ordination, what are the environmental variables (or groups of correlated variables) that seem to be contributing to variation in fish community structure?
 
-> ***Answer 3***: 
+> ***Answer 3***: It appearas that bdo (highly correlated with pho), oxy, and nit are variables that seem to be contributing to variation in fish community structure. 
 
 ### iii. Variation Partitioning
 In the code chunk below,   
@@ -178,6 +242,61 @@ In the code chunk below,
 5. Partition the variation among sites into the relative importance of space, environment, spatially structured environment, and residuals,
 6. Plot the variation partitioning output to visualize it.  
 ```{r}
+#Create a matrix model for environmental data
+env.mod <- model.matrix(~oxy + bdo + nit, as.data.frame(env.chm))[, -1]
+
+#Create a spatial model (several steps)
+  #First, weight each site by it relative abundance
+rs <- rowSums(fish)/sum(fish)
+
+  #perform a Principal Coordinates of Neighbor Matrices
+doubs.pcnmw <- pcnm(dist(doubs$xy[-8,]), w = rs, dist.ret = T)
+
+  #Note that PCNM can retun negative eigenvalues, but only positive values have meaning
+doubs.pcnmw$values > 0
+
+  #Need to perform model selection (forward and backwards) to determine which eigenvalues create the most informative model with the fewest parameters
+
+doubs.space <- as.data.frame(scores(doubs.pcnmw))
+doubs.pcnm.mod0 <- dbrda(fish.db ~ 1, doubs.space)
+doubs.pcnm.mod1 <- dbrda(fish.db ~ ., doubs.space)
+step.pcnm <- ordiR2step(doubs.pcnm.mod0, doubs.pcnm.mod1, perm.max = 200)
+
+  # visualize the dbRDA
+plot(step.pcnm)
+
+  #Now, the object step.pcnm contains the selected model
+step.pcnm$anova
+
+  #Now, construct a spatial model using only the selected PCNM axes.
+space.mod <- model.matrix(~ PCNM2 + PCNM3 + PCNM5 + PCNM1 + PCNM13 + PCNM16 + PCNM6, doubs.space)[, -1]
+
+  #Perform a partial constrained ordination
+  #conduct constrained ordinations
+doubs.total.env <- dbrda(fish.db ~ env.mod)
+doubs.total.space <- dbrda(fish.db ~ space.mod)
+
+#Construct partial constrained ordinations
+doubs.env.cond.space <- dbrda(fish.db ~ env.mod + Condition(space.mod))
+doubs.space.cond.env <- dbrda(fish.db ~ space.mod + Condition(env.mod))
+
+#Test for significance 
+permutest(doubs.env.cond.space, permutations = 999)
+permutest(doubs.space.cond.env, permutations = 999)
+permutest(doubs.total.env, permutations = 999)
+permutest(doubs.total.space, permutations = 999)
+
+#Calculate fraction of variation explained by environment alone, space alone, environment and space, and neither environment or space
+
+doubs.varpart <- varpart(fish.db, env.mod, space.mod)
+doubs.varpart
+
+#plot
+par(mar = c(2,2,2,2))
+plot(doubs.varpart)
+text(1,0.25, "Space")
+text(0, 0.25, "Env")
+mtext("Variation Partitioning of Doubs Fish Diversity")
 
 
 
@@ -189,16 +308,87 @@ In the code chunk below,
 
 ***Question 4***: Interpret the variation partitioning results.   
 
-> ***Answer 4***: 
+> ***Answer 4***: It appears that space alone explains more variability in fish community structure (24%) than environment alone (13%), and that together space and environment explain 37% of Doubs fish diversity. 
 
 ## SYNTHESIS
 
 1) Using the jelly bean data from class (i.e., JellyBeans.txt), perform a PERMANOVA to test whether or not the vicariance event (random splitting of source community) had an affect on jelly bean composition.
 Based on your previous analyses with this data set, what are your thoughts about the importance of stochastic vs. deterministic factors on estimates of biodiversity?
 
+> Based on the PERMANOVA (see below), and previous analyses, it appears that a random split did in fact have an effect on jelly bean composition. This is a reminder that that stochastic factors are important to consider when estimating biodiversity, and that a purely deterministic estimate may not be sufficient. 
+
+```{r}
+Jelly <- read.csv("JellyBeanSampleData.csv")
+Jelly <- as.data.frame(Jelly)
+
+
+Site <- c(rep("A", 5), rep("B", 4))
+
+adonis(Jelly[3:28] ~ Site, method = "bray", permutations = 999)
+
+
+
+
+
+
+
+
+```
+
 2) Load the dataset you are using for your Team Project. 
 Perform an ordination to visualize your dataset.
 Using this ordination, develop some hypotheses relevant to $\beta$-diversity.
 Use a statistic to test one of these hypotheses.
 Succinctly explain the finding and its relevance to your system.
+
+> As seen below, almost all of the sites that were affected the least by hemlock woolly adelged (L's) were grouped at the bottom righ to the ordination, and the sites that were affected the most (HA's and HB's) also appeared grouped. Therefore, I hypothesized that bird communities vary based on level of hemlock woolly adelgid impact. A PERMANOVA indicated that, indeed, there are differences between the sites afftected at the low, medium, and high A/B levels with respect to avian community composition. This finding suggests that hemlock woolly adelgid is affecting bird communities.  
+
+```{r}
+Woolly <- read.csv("hf085-01-bird.csv")
+Woolly <- as.data.frame(Woolly)
+
+Woolly.db <- vegdist(Woolly[,3:49 ], method = "bray")
+Woolly.pcoa <- cmdscale(Woolly.db, eig = TRUE, k = 3)
+Woolly.pcoa
+
+
+plainvar1 <- round(Woolly.pcoa$eig[1] / sum(Woolly.pcoa$eig), 3) * 100
+plainvar2 <- round(Woolly.pcoa$eig[2] / sum(Woolly.pcoa$eig), 3) * 100
+plainvar3 <- round(Woolly.pcoa$eig[3] / sum(Woolly.pcoa$eig), 3) * 100
+sum.EigA <- sum(plainvar1, plainvar2, plainvar3)
+
+sum.EigA
+
+sites <- c(rep("HA", 10), rep("HB", 11), rep("L", 11), rep("M", 8)) 
+          
+
+#To do ordination, first define plot parameters
+par(mar = c(5,5,1,2) + 0.1)
+
+#Then, initiate plot
+plot(Woolly.pcoa$points[ ,1], Woolly.pcoa$points[,2], ylim = c(-0.2, 0.7),
+     xlab = paste("PCoA 1 (", plainvar1, "%)", sep = ""), 
+     ylab = paste("PCoA 2 (", plainvar2, "%)", sep = ""), 
+     pch = 16, cex = 2.0, type = "n", cex.lab = 1.5, cex.axis = 1.2, axes = FALSE)
+ 
+#Add axes
+axis(side = 1, labels = T, lwd.ticks = 2, cex.axis = 1.2, las = 1)
+axis(side = 2, labels = T, lwd.ticks = 2, cex.axis = 1.2, las = 1)
+abline(h = 0, v = 0, lty = 3)
+box(lwd = 2)
+
+#Add points and labels
+points(Woolly.pcoa$points[ ,1], Woolly.pcoa$points[ ,2], 
+  pch = 19, cex = 3, bg = "gray", col = "gray")
+
+text(Woolly.pcoa$points[ ,1], Woolly.pcoa$points[ ,2],
+     labels = sites, col = "black")
+
+
+#create a factors vector
+
+adonis(Woolly[,3:49] ~ sites, method = "bray", permutations = 999)
+
+
+```
 
