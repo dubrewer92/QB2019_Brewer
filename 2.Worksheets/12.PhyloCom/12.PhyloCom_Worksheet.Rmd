@@ -1,6 +1,6 @@
 ---
 title: '12\.Phylogenetic Diversity - Communities'
-author: "Student Name; Z620: Quantitative Biodiversity, Indiana University"
+author: "Dustin Brewer; Z620: Quantitative Biodiversity, Indiana University"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 output: pdf_document
 geometry: margin=2.54cm
@@ -43,7 +43,22 @@ In the R code chunk below, provide the code to:
 5. load the required R source file.
 
 ```{r}
+rm(list = ls())
+getwd()
 
+install.packages("picante")
+install.packages("fossil")
+install.packages("reshape")
+
+library(picante)
+library(ape)
+library(seqinr)
+library(vegan)
+library(fossil)
+library(reshape)
+library(simba)
+
+source("./bin/MothurTools.R")
 
 ```
 
@@ -69,7 +84,29 @@ In the R code chunk below, do the following:
 6. load the taxonomic data using the `read.tax()` function from the source-code file.
 
 ```{r}
+env <- read.table("data/20130801_PondDataMod.csv", sep = ",", header = TRUE)
+env <- na.omit(env)
 
+str(env)
+
+#Load site by species matrix
+comm <- read.otu(shared = "./data/INPonds.final.rdp.shared", cutoff = "1")
+
+#Select DNA, disregard cDNA
+comm <- comm[grep("*-DNA", rownames(comm)),]
+
+#Perform replacement of all matches
+rownames(comm) <- gsub("\\-DNA", "", rownames(comm))
+rownames(comm) <- gsub("\\_", "", rownames(comm))
+
+#remove sites not in the environmental data set
+comm <- comm[rownames(comm) %in% env$Sample_ID,]
+
+#remove zero-abundance OTUs from data set
+comm <- comm[ , colSums(comm) > 0]
+
+#From the source code, take a look at taxonomic information associated with OTU data
+tax <- read.tax(taxonomy = "./data/INPonds.final.rdp.1.cons.taxonomy")
 
 ```
 
@@ -85,6 +122,8 @@ Next, in the R code chunk below, do the following:
 9. plot the rooted tree.
 
 ```{r}
+#import the alignment file
+ponds.cons <- read.alignment(file = "./data/INPonds.final.rdp.1.rep.fasta", format = "fasta")
 
 
 ```
